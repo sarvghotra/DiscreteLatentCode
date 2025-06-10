@@ -1,0 +1,16 @@
+# this corresponds to the default config
+MODEL:
+  pretrained_backbone: <ROOT_PATH>/models/dinov2_vitl14_reg4_pretrain.pth
+  img_size: 518  # this is to set up the position embeddings properly
+train:
+  dataset_path: ImageNet:split=TRAIN:root=<DATASET_PATH>/imagenet.var/imagenet_torchvision:extra=<ROOT_PATH>/datasets/extra
+  batch_size_per_gpu: 64
+student:
+  patch_size: 14
+  num_register_tokens: 4
+  interpolate_antialias: true
+  interpolate_offset: 0.0
+optim:
+  base_lr: 1e-4
+crops:
+  local_crops_size: 98
