@@ -1,6 +1,6 @@
 # Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models
 
-[Paper]() [DLC dataset](#DLC-datasets) [Models](#Pre-traiend-models) [BibTex](#Citation)
+📄[Paper]() 📁[DLC dataset](#📁-DLC-datasets) ⚙️ [Models](#Pre-trained-models) 📚[BibTex](#Citation)
 
 Authors: Samuel Lavoie, Michael Noukhovitch, Aaron Courville
 
@@ -10,7 +10,7 @@ to allow researcher to study compositional and productive generative models.
 This project builds on three codebases: [DinoV2](https://github.com/facebookresearch/dinov2), [SEDD](https://github.com/louaaron/Score-Entropy-Discrete-Diffusion) and [Fast-DiT](https://github.com/chuanyangjin/fast-DiT).
 We provide our modifications of each of the codebases in this repository [DLC-DinoV2](./dinov2), [DLC-SEDD](./sedd) and [DLC-Fast-DiT](./dit).
 
-# DLC datasets
+# 📁 DLC datasets
 
 We provide the ImageNet DLC as a HiggingFace dataset that is produced using the DLC-DinoV2 models.
 This dataset is used to train the DLC-SEDD and the DLC-DiT models.
