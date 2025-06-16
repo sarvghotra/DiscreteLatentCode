@@ -1,6 +1,6 @@
 # Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models
 
-📄[Paper]() 📁[DLC dataset](#📁-DLC-datasets) ⚙️ [Models](#Pre-trained-models) 📚[BibTex](#Citation)
+📄[Paper]() 📁[DLC dataset](#-DLC-datasets) ⚙️ [Models](#Pre-trained-models) 📚[BibTex](#Citation)
 
 Authors: Samuel Lavoie, Michael Noukhovitch, Aaron Courville
 
