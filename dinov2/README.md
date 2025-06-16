@@ -1,6 +1,6 @@
 # DINOv2+SEM
 
-**Authors of DINOv2((:
+**Authors of DINOv2**:
 Maxime Oquab,
 Timothée Darcet,
 Théo Moutakanni,
@@ -11,7 +11,7 @@ Patrick Labatut,
 Armand Joulin,
 Piotr Bojanowski
 
-**Authors of SEMs modification**:
+**Authors of SEMs modifications**:
 Samuel Lavoie,
 Michael Noukhovitch,
 Aaron Courville

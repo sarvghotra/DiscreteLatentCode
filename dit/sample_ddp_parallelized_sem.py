@@ -54,20 +54,15 @@ def create_npz_from_sample_folder(sample_dir, num=50_000):
 
 
 class CustomDataset(Dataset):
-    def __init__(self, sem_dir, n_imgs, num_fid_samples):
-        self.sem_dir = sem_dir
+    def __init__(self, dlc_dir, n_imgs, num_fid_samples):
+        self.dlc_dir = dlc_dir
 
-        sem_files = sorted(os.listdir(sem_dir))
+        sem_files = sorted(os.listdir(dlc_dir))
         n_sems_per_file = len(
-            torch.load(os.path.join(sem_dir, sem_files[0]), map_location="cpu")
+            torch.load(os.path.join(dlc_dir, sem_files[0]), map_location="cpu")
         )
-        start_idx = n_imgs // n_sems_per_file
-        self.sem_files = sem_files[start_idx:]
-        self.start_idx = start_idx
+        self.sem_files = sem_files
         self.n_sems_per_file = n_sems_per_file
-        end_idx = math.ceil(num_fid_samples / n_sems_per_file)
-
-        self.sem_files = sem_files[start_idx:end_idx]
 
     def __len__(self):
         return len(self.sem_files)
@@ -75,7 +70,7 @@ class CustomDataset(Dataset):
     def __getitem__(self, idx):
         sem_file = self.sem_files[idx]
 
-        sem = torch.load(os.path.join(self.sem_dir, sem_file), map_location="cpu")
+        sem = torch.load(os.path.join(self.dlc_dir, sem_file), map_location="cpu")
         return sem
 
 
@@ -98,7 +93,7 @@ def main(args):
     rank = accelerator.process_index
     world_size = accelerator.num_processes
     device = rank % torch.cuda.device_count()
-    seed = args.global_seed * world_size + rank
+    seed = args.global_seed + args.task_id
     torch.manual_seed(seed)
     torch.cuda.set_device(device)
     print(f"Starting rank={rank}, seed={seed}, world_size={world_size}")
@@ -118,11 +113,11 @@ def main(args):
         V = cfg["student"]["V"]
     if "SEM" in args.model:
         model = DiT_models[args.model](
-            input_size=latent_size, num_classes=args.num_classes, L=L, V=V
+            input_size=latent_size, L=L, V=V
         )
     elif "CONT" in args.model:
         model = DiT_models[args.model](
-            input_size=latent_size, num_classes=args.num_classes, in_dim=1024
+            input_size=latent_size, in_dim=1024
         )
     else:
         model = DiT_models[args.model](
@@ -164,29 +159,17 @@ def main(args):
     # dist.barrier()
     accelerator.wait_for_everyone()
 
-    n_imgs = len(os.listdir(sample_folder_dir))
-    dataset = CustomDataset(args.sem_dir, n_imgs, args.num_fid_samples)
+    dataset = CustomDataset(args.dlc_dir, 0, args.num_fid_samples)
+    print(f"task index: {args.task_id}, sem_file: {dataset.sem_files[args.task_id]}")
+    ys = dataset[args.task_id]
 
     n = args.per_proc_batch_size
     global_batch_size = n * world_size
 
-    loader = DataLoader(
-        dataset,
-        batch_size=n,
-        shuffle=False,
-        num_workers=4,
-        pin_memory=True,
-        drop_last=False,
-    )
-    loader = accelerator.prepare(loader)
-
-    total = dataset.start_idx * dataset.n_sems_per_file
-    for ys in tqdm(loader):
-        # FIXME: There seems to be a bug in the dataloader when the size of the dataset is 0
-        if ys is None:
-            break
-        # Sample inputs:
-        ys = ys.view(-1, ys.shape[-1])
+    # Sample inputs:
+    total = 0
+    ys = ys.view(-1, ys.shape[-1])
+    if True:
         for y in tqdm(torch.chunk(ys, 4)):
             y = y.view(-1, y.shape[-1])
             y = y.to(device)
@@ -228,9 +211,9 @@ def main(args):
 
             # Save samples to disk as individual .png files
             for i, sample in enumerate(samples):
-                index = i * world_size + rank + total
+                index = i + args.task_id * len(ys) + total
                 Image.fromarray(sample).save(f"{sample_folder_dir}/{index:06d}.png")
-            total += n * world_size
+            total += n
             accelerator.wait_for_everyone()
 
     # Make sure all processes have finished saving their samples before attempting to convert to .npz
@@ -244,7 +227,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2"
+        "--model", type=str, choices=list(DiT_models.keys()), default="DiTSEM-XL/2"
     )
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")
     parser.add_argument("--sample-dir", type=str, default="samples")
@@ -257,6 +240,8 @@ if __name__ == "__main__":
     parser.add_argument("--t-max", type=float, default=None)
     parser.add_argument("--num-sampling-steps", type=int, default=250)
     parser.add_argument("--global-seed", type=int, default=0)
+    parser.add_argument("--task-id", type=int, default=0)
+    parser.add_argument("--total-num", type=int, default=196)
     parser.add_argument(
         "--tf32",
         action=argparse.BooleanOptionalAction,
@@ -270,7 +255,7 @@ if __name__ == "__main__":
         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).",
     )
     parser.add_argument(
-        "--sem-dir",
+        "--dlc-dir",
         type=str,
         default=None,
         help="Path where to find the SEMs to generate",
