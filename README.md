@@ -34,7 +34,7 @@ We provide pre-trained SEM encoders as HF model and the IN-1k linear probe accur
 They are Dinov2 encoders fine-tuned with ImageNet-1k data.
 The code to reproduce the encoders can be found in the folder [dinov2](./dinov2).
 
-**Pretrained-SEM Encoders**
+## Pre-trained SEM Encoders
 | DLC shape        | IN1k Lin prob acc |   HF model    |
 | --------------   | ----------------- | ------------- |
 | $32\times 4096$  | 81.5              | [lavoie/sem-encoder-large-32x4096]()  |
@@ -58,7 +58,7 @@ outputs = model(**inputs)
 sems = outputs.last_hidden_state
 ```
 
-**Pre-trained DLC-SEDD models**:
+## Pre-trained DLC-SEDD
 | DLC shape         | HF model |
 | --------------    | ------------- |
 | $32\times 4096$   | [lavoie/dlc-sedd-medium-32x4096]()  |
@@ -75,7 +75,7 @@ outputs = model.generate()
 dlc = outputs.last_hidden_state
 ```
 
-**Pre-trained DLC-DiT models**:
+# Pre-trained DLC-DiT
 | DLC shape         | HF model |
 | --------------    | ------------- |
 | $32\times 4096$   | [lavoie/dlc-dit-xl2-32x4096]()  |
