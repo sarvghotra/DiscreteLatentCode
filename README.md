@@ -7,6 +7,8 @@
 This repository contains the official code, DLC datasets, and models for the paper *Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models.*
 We introduce compositional discrete latent codes (DLCs), which enable both high-fidelity image generation and compositional control in diffusion models.
 
+![Head image -- unconditional and semantic compositional generation examples](figures/head_github.png)
+
 We provide our modifications of each of the codebases in this repository
 * [DLC-DinoV2](./dinov2)
 * [DLC-SEDD](./sedd)
