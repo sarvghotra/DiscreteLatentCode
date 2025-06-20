@@ -1,18 +1,28 @@
 # Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models
 
-📄[Paper]() 📁[DLC dataset](#-DLC-datasets) 📀[Models](#-Pre-trained-models) ⚙️ [Installation](#%EF%B8%8F--installation) 🖌[BibTex](#-Citation) 📚[References](#-Reference)
+📄[Paper]() 📁[DLC dataset](#-DLC-datasets) 📀[Models](#-Pre-trained-models) 🖌[BibTex](#-Citation) 📚[References](#-Reference)
 
 **Authors**: Samuel Lavoie, Michael Noukhovitch, Aaron Courville
 
-This repository contains the official code, DLC datasets, and models for the paper *Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models.*
-We introduce compositional discrete latent codes (DLCs), which enable both high-fidelity image generation and compositional control in diffusion models.
-
 ![Head image -- unconditional and semantic compositional generation examples](figures/head_github.png)
 
-We provide our modifications of each of the codebases in this repository
-* [DLC-DinoV2](./dinov2)
-* [DLC-SEDD](./sedd)
-* [DLC-Fast-DiT](./dit).
+We introduce compositional discrete latent codes (DLCs), which enable both high-fidelity image generation and compositional control in diffusion models.
+This repository contains the official code, DLC datasets, and models for the paper *Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models.*
+Below, we provide the DLC datasets and instructions to load the pre-trained models using HuggingFace 🤗.
+The code to reproduce the model is organized as follows:
+* The code to reproduce the SEM encoder: [./dinov2](./dinov2)
+* The code to reproduce the DLC generator: [./sedd](./sedd)
+* The code to reproduce the DLC to image generator: [./dit](./dit).
+
+## ⚙️  Installation
+The python packages to train all of the models can be installed using the following commands:
+```bash
+virtualenv env
+source env/bin/activate
+pip install -r requirement.txt
+pip install --no-build-isolation --no-deps git+https://github.com/facebookresearch/xformers.git
+pip install -e dinov2
+```
 
 # 📁 DLC datasets
 
