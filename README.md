@@ -1,16 +1,11 @@
 # Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models
 
-📄[Paper]() 📁[DLC dataset](#-DLC-datasets) 📀[Models](#-Pre-trained-models) ⚙️ [Installation](#%EF%B8%8F--installation) 📚[BibTex](#-Citation)
+📄[Paper]() 📁[DLC dataset](#-DLC-datasets) 📀[Models](#-Pre-trained-models) ⚙️ [Installation](#%EF%B8%8F--installation) 🖌[BibTex](#-Citation) 📚[References](#-Reference)
 
-Authors: Samuel Lavoie, Michael Noukhovitch, Aaron Courville
+**Authors**: Samuel Lavoie, Michael Noukhovitch, Aaron Courville
 
-This repository contains the official code, DLC datasets, and models for the paper "Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models."
+This repository contains the official code, DLC datasets, and models for the paper *Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models.*
 We introduce compositional discrete latent codes (DLCs), which enable both high-fidelity image generation and compositional control in diffusion models.
-
-Our implementation builds upon three codebases: 
-* [DinoV2](https://github.com/facebookresearch/dinov2)
-* [SEDD](https://github.com/louaaron/Score-Entropy-Discrete-Diffusion)
-* [Fast-DiT](https://github.com/chuanyangjin/fast-DiT).
 
 We provide our modifications of each of the codebases in this repository
 * [DLC-DinoV2](./dinov2)
@@ -95,7 +90,7 @@ image = dit.generate(dlc)
 
 # ⚙️  Installation
 
-The python packages to train all of the models can be install using the following code:
+The python packages to train all of the models can be installed using the following commands:
 ```bash
 virtualenv env
 source env/bin/activate
@@ -104,4 +99,12 @@ pip install --no-build-isolation --no-deps git+https://github.com/facebookresear
 pip install -e dinov2
 ```
 
-# 📚 Citation
+# 🖌 Citation
+
+# 📚 References
+
+Our implementation builds upon three prior works:
+* The SEM encoder is built of the work of [DinoV2](https://github.com/facebookresearch/dinov2).
+* The DLC generative model implementation is built upond [SEDD](https://github.com/louaaron/Score-Entropy-Discrete-Diffusion)
+* The DLC-to-image generation is built upon [Fast-DiT](https://github.com/chuanyangjin/fast-DiT), which itself is built upon [DiT](https://github.com/facebookresearch/DiT).
+
