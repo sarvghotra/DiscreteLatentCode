@@ -1,6 +1,6 @@
 # Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models
 
-📄[Paper]() 📁[DLC dataset](#-DLC-datasets) ⚙️ [Models](#-Pre-trained-models) [Installation](#Installation) 📚[BibTex](#-Citation)
+📄[Paper]() 📁[DLC dataset](#-DLC-datasets) 📀[Models](#-Pre-trained-models) ⚙️ [Installation](#-Installation) 📚[BibTex](#-Citation)
 
 Authors: Samuel Lavoie, Michael Noukhovitch, Aaron Courville
 
@@ -28,7 +28,7 @@ This dataset is used to train the DLC-SEDD and the DLC-DiT models.
 | $128\times 1024$ | [download]()  |
 | $512\times 256$  | [download]()  |
 
-# ⚙️  Pre-trained models
+# 📀 Pre-trained models
 
 We provide pre-trained SEM encoders as HF model and the IN-1k linear probe accuracy on the DLC, which are discretized SEMs.
 They are Dinov2 encoders fine-tuned with ImageNet-1k data.
@@ -75,7 +75,7 @@ outputs = model.generate()
 dlc = outputs.last_hidden_state
 ```
 
-# Pre-trained DLC-DiT
+## Pre-trained DLC-DiT
 | DLC shape         | HF model |
 | --------------    | ------------- |
 | $32\times 4096$   | [lavoie/dlc-dit-xl2-32x4096]()  |
@@ -93,7 +93,7 @@ dlc = outputs.last_hidden_state
 image = dit.generate(dlc)
 ```
 
-# Installation
+# ⚙️  Installation
 The python packages to train all of the models can be install using the following code:
 ```bash
 virtualenv env
