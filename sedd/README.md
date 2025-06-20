@@ -14,11 +14,9 @@ python run_sample.py --model_path MODEL_PATH --steps STEPS
 
 ### Run Training
 
-We provide training code, which can be run with the command
-```
-python run_train.py
-```
-This creates a new directory `direc=exp_local/DATE/TIME` with the following structure (compatible with running sampling experiments locally)
+We provide training code, which can be run with the command found in `launchL512_medium.sh`.
+
+This creates a new directory `direc=exp/0` to the location specified in the config file with the following structure (compatible with running sampling experiments locally)
 ```
 ├── direc
 │   ├── .hydra
@@ -28,9 +26,6 @@ This creates a new directory `direc=exp_local/DATE/TIME` with the following stru
 │   │   ├── checkpoint_*.pth
 │   ├── checkpoints-meta
 │   │   ├── checkpoint.pth
-│   ├── samples
-│   │   ├── iter_*
-│   │   │   ├── sample_*.txt
 │   ├── logs
 ```
 Here, `checkpoints-meta` is used for reloading the run following interruptions, `samples` contains generated images as the run progresses, and `logs` contains the run output. Arguments can be added with `ARG_NAME=ARG_VALUE`, with important ones being:

@@ -1,6 +1,6 @@
 # Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models
 
-📄[Paper]() 📁[DLC dataset](#-DLC-datasets) ⚙️ [Models](#-Pre-trained-models) 📚[BibTex](#-Citation)
+📄[Paper]() 📁[DLC dataset](#-DLC-datasets) ⚙️ [Models](#-Pre-trained-models) [Installation](#Installation) 📚[BibTex](#-Citation)
 
 Authors: Samuel Lavoie, Michael Noukhovitch, Aaron Courville
 
@@ -91,6 +91,16 @@ dit = AutoModel.from_pretrained('lavoie/dlc-dit-medium-512x256')
 outputs = model.generate()
 dlc = outputs.last_hidden_state
 image = dit.generate(dlc)
+```
+
+# Installation
+The python packages to train all of the models can be install using the following code:
+```bash
+virtualenv env
+source env/bin/activate
+pip install -r requirement.txt
+pip install --no-build-isolation --no-deps git+https://github.com/facebookresearch/xformers.git
+pip install -e dinov2
 ```
 
 # 📚 Citation

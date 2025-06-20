@@ -1,16 +1,16 @@
 # this corresponds to the default config
 MODEL:
-  pretrained_backbone: <ROOT_PATH>/models/dinov2_vitl14_reg4_pretrain.pth
+  pretrained_backbone: /network/scratch/l/lavoiems/models/dinov2_vitl14_reg4_pretrain.pth
   img_size: 518  # this is to set up the position embeddings properly
 train:
-  dataset_path: ImageNet:split=TRAIN:root=<DATASET_PATH>/imagenet.var/imagenet_torchvision:extra=<ROOT_PATH>/datasets/extra
+  dataset_path: ImageNet:split=TRAIN:root=/network/datasets/imagenet.var/imagenet_torchvision:extra=/network/scratch/l/lavoiems/datasets/extra
   batch_size_per_gpu: 64
   saveckp_freq: 10
 student:
   arch: vit_large_sem
   patch_size: 14
-  L: 128
-  V: 1024
+  L: 512
+  V: 256
   num_register_tokens: 4
   interpolate_antialias: true
   interpolate_offset: 0.0

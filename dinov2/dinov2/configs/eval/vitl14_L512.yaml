@@ -1,5 +1,5 @@
 student:
-  arch: vit_large_pos_shared_sem
+  arch: vit_large_sem
   patch_size: 14
   num_register_tokens: 4
   interpolate_antialias: true
