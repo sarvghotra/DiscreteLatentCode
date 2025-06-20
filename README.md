@@ -1,6 +1,6 @@
 # Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models
 
-📄[Paper]() 📁[DLC dataset](#-DLC-datasets) 📀[Models](#-Pre-trained-models) ⚙️ [Installation](#--Installation) 📚[BibTex](#-Citation)
+📄[Paper]() 📁[DLC dataset](#-DLC-datasets) 📀[Models](#-Pre-trained-models) ⚙️ [Installation](#--installation) 📚[BibTex](#-Citation)
 
 Authors: Samuel Lavoie, Michael Noukhovitch, Aaron Courville
 
@@ -94,6 +94,7 @@ image = dit.generate(dlc)
 ```
 
 # ⚙️  Installation
+
 The python packages to train all of the models can be install using the following code:
 ```bash
 virtualenv env
