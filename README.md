@@ -6,13 +6,13 @@
 
 ![Head image -- unconditional and semantic compositional generation examples](figures/head_github.png)
 
-We introduce compositional discrete latent codes (DLCs), which enable both high-fidelity image generation and compositional control in diffusion models.
+We introduce compositional discrete latent codes (DLCs), which enable both high-fidelity image generation and compositional generation in diffusion models.
 This repository contains the official code, DLC datasets, and models for the paper *Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models.*
 Below, we provide the DLC datasets and instructions to load the pre-trained models using HuggingFace 🤗.
 The code to reproduce the model is organized as follows:
 * The code to reproduce the SEM encoder: [./dinov2](./dinov2)
 * The code to reproduce the DLC generator: [./sedd](./sedd)
-* The code to reproduce the DLC to image generator: [./dit](./dit).
+* The code to reproduce the DLC to image generator and text-and-image LLADA fine-tuning: [./dit](./dit).
 
 ## ⚙️  Installation
 The python packages to train all of the models can be installed using the following commands:
@@ -31,9 +31,7 @@ This dataset is used to train the DLC-SEDD and the DLC-DiT models.
 
 | DLC shape        | HF dataset |
 | --------------   | ------- |
-| $32\times 4096$  | [download]()  |
-| $128\times 1024$ | [download]()  |
-| $512\times 256$  | [download]()  |
+| $512\times 256$  | [lavoies/DLC_512x256](https://huggingface.co/datasets/lavoies/DLC_512x256)  |
 
 # 📀 Pre-trained models
 
@@ -42,11 +40,9 @@ They are Dinov2 encoders fine-tuned with ImageNet-1k data.
 The code to reproduce the encoders can be found in the folder [dinov2](./dinov2).
 
 ## Pre-trained SEM Encoders
-| DLC shape        | IN1k Lin prob acc |   HF model    |
+| DLC shape        | IN1k Lin prob acc on DLC |   HF model    |
 | --------------   | ----------------- | ------------- |
-| $32\times 4096$  | 81.5              | [lavoie/sem-encoder-large-32x4096]()  |
-| $128\times 1024$ | 83.6              | [lavoie/sem-encoder-large-128x1024]()  |
-| $512\times 256$  | 85.3              | [lavoie/sem-encoder-large-512x256]()  |
+| $512\times 256$  | 85.3              | [lavoies/SEM_dinov2_L512](https://huggingface.co/lavoies/SEM_dinov2_L512)  |
 
 Encoding an image using the Huggingface model can be achieved as follows:
 ```
@@ -57,8 +53,8 @@ from transformers import AutoImageProcessor, AutoModel
 url = 'http://images.cocodataset.org/val2017/000000039769.jpg'
 image = Image.open(requests.get(url, stream=True).raw)
 
-processor = AutoImageProcessor.from_pretrained('lavoie/sem-encoder-large-512x256')
-model = AutoModel.from_pretrained('lavoie/sem-encoder-large-512x256')
+processor = AutoImageProcessor.from_pretrained('lavoies/SEM_dinov2_L512')
+model = AutoModel.from_pretrained('lavoies/SEM_dinov2_L512')
 
 inputs = processor(images=image, return_tensors="pt")
 outputs = model(**inputs)
@@ -68,15 +64,13 @@ sems = outputs.last_hidden_state
 ## Pre-trained DLC-SEDD
 | DLC shape         | HF model |
 | --------------    | ------------- |
-| $32\times 4096$   | [lavoie/dlc-sedd-medium-32x4096]()  |
-| $128\times 1024$  | [lavoie/dlc-sedd-medium-128x1024]()  |
-| $512\times 256$   | [lavoie/dlc-sedd-medium-512x256]()  |
+| $512\times 256$   | [lavoies/DLC_SEDD_L512](https://huggingface.co/lavoies/DLC_SEDD_L512)  |
 
 Sampling DLC can be achieved as follows:
 ```
-from transformers import AutoImageProcessor, AutoModel
+from transformers import AutoModel
 
-model = AutoModel.from_pretrained('lavoie/dlc-sedd-medium-512x256')
+model = AutoModel.from_pretrained('lavoies/DLC_SEDD_L512')
 
 outputs = model.generate()
 dlc = outputs.last_hidden_state
@@ -85,31 +79,38 @@ dlc = outputs.last_hidden_state
 ## Pre-trained DLC-DiT
 | DLC shape         | HF model |
 | --------------    | ------------- |
-| $32\times 4096$   | [lavoie/dlc-dit-xl2-32x4096]()  |
-| $128\times 1024$  | [lavoie/dlc-dit-xl2-128x1024]()  |
-| $512\times 256$   | [lavoie/dlc-dit-xl2-512x256]()  |
+| $512\times 256$   | [lavoies/DLC_DiT_L512](https://huggingface.co/lavoies/DLC_DiT_L512)  |
 
+Unconditional sampling of ImageNet images can be achieved as follows:
 ```
-from transformers import AutoImageProcessor, AutoModel
+from transformers import AutoModel
 
-model = AutoModel.from_pretrained('lavoie/dlc-sedd-medium-512x256')
-dit = AutoModel.from_pretrained('lavoie/dlc-dit-medium-512x256')
+model = AutoModel.from_pretrained('lavoies/DLC_SEDD_L512')
+dit = AutoModel.from_pretrained('lavoies/DLC_DiT_L512')
 
 outputs = model.generate()
 dlc = outputs.last_hidden_state
 image = dit.generate(dlc)
 ```
 
-# ⚙️  Installation
+## Fine-tuned text-and-image LLADA model
+| DLC shape | HF model |
+| ----------| -------- |
+| $512\times 256$ | [lavoies/DLC_LLADA_L512](https://huggingface.co/lavoies/DLC_LLADA_L512) |
 
-The python packages to train all of the models can be installed using the following commands:
-```bash
-virtualenv env
-source env/bin/activate
-pip install -r requirement.txt
-pip install --no-build-isolation --no-deps git+https://github.com/facebookresearch/xformers.git
-pip install -e dinov2
+Text-to-image generation can be achieved as follows:
 ```
+from transformers import AutoModel, AutoTokenizer
+
+text = ["An image of a golden retriever."]
+
+tokenizer = AutoTokenizer.from_pretrained('lavoies/DLC_LLADA_L512')
+llada = AutoModel.from_pretrained('lavoies/DLC_LLADA_L512')
+dit = AutoModel.from_pretrained('lavoies/DLC_DiT_L512')
+
+
+```
+
 
 # 🖌 Citation
 
