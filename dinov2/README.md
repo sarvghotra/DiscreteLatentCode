@@ -22,9 +22,12 @@ PyTorch implementation for DINOv2 + SEM. Training on 4 H100.
 
 ### Training Dinov2 + SEM
 
+Update the config file `vitl14_sem_L512.yaml` to specify the ROOT_PATH where the base dinov2 model and the extra datasets is save. The extra
+dataset can be generated using the procedure from [dinov2's repos](https://github.com/facebookresearch/dinov2?tab=readme-ov-file#data-preparation).
+After the preparation, the SEM encoder can be trained as follows. You might have to update `dinov2/run/submit.py` depending on your SLURM setup.
 ```shell
 python dinov2/run/train/train.py \
-    --nodes 4 \
+    --nodes 1 \
     --config-file dinov2/configs/train/vitl14_sem_L512.yaml \
     --output-dir <PATH/TO/OUTPUT/DIR> \
     train.dataset_path=ImageNet:split=TRAIN:root=<PATH/TO/DATASET>:extra=<PATH/TO/DATASET>
@@ -38,33 +41,11 @@ Training time is approximately 1.2 days.
 
 The training code regularly saves the teacher weights. In order to evaluate the model, run the following evaluation on a single node:
 
-### k-NN classification on ImageNet-1k
-
-```shell
-python dinov2/run/eval/knn.py \
-    --config-file <PATH/TO/OUTPUT/DIR>/config.yaml \
-    --pretrained-weights <PATH/TO/OUTPUT/DIR>/eval/training_24999/teacher_checkpoint.pth \
-    --output-dir <PATH/TO/OUTPUT/DIR>/eval/training_24999/knn \
-    --train-dataset ImageNet:split=TRAIN:root=<PATH/TO/DATASET>:extra=<PATH/TO/DATASET> \
-    --val-dataset ImageNet:split=VAL:root=<PATH/TO/DATASET>:extra=<PATH/TO/DATASET>
-```
-
-### Logistic regression classification on ImageNet-1k
-
-```shell
-python dinov2/run/eval/log_regression.py \
-    --config-file <PATH/TO/OUTPUT/DIR>/config.yaml \
-    --pretrained-weights <PATH/TO/OUTPUT/DIR>/eval/training_24999/teacher_checkpoint.pth \
-    --output-dir <PATH/TO/OUTPUT/DIR>/eval/training_24999/logreg \
-    --train-dataset ImageNet:split=TRAIN:root=<PATH/TO/DATASET>:extra=<PATH/TO/DATASET> \
-    --val-dataset ImageNet:split=VAL:root=<PATH/TO/DATASET>:extra=<PATH/TO/DATASET>
-```
-
 ### Linear classification with data augmentation on ImageNet-1k
 
 ```shell
 python dinov2/run/eval/linear.py \
-    --config-file <PATH/TO/OUTPUT/DIR>/config.yaml \
+    --config-file dinov2/configs/eval/vitl14_L512.yaml \
     --pretrained-weights <PATH/TO/OUTPUT/DIR>/eval/training_24999/teacher_checkpoint.pth \
     --output-dir <PATH/TO/OUTPUT/DIR>/eval/training_24999/linear \
     --train-dataset ImageNet:split=TRAIN:root=<PATH/TO/DATASET>:extra=<PATH/TO/DATASET> \

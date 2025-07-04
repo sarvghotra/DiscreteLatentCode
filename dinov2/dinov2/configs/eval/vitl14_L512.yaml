@@ -4,7 +4,7 @@ student:
   num_register_tokens: 4
   interpolate_antialias: true
   interpolate_offset: 0.0
-  temp: 0.5
+  temp: 0.00001
   L: 512
   V: 256
 crops:

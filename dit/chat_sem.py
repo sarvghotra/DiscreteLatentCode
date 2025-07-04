@@ -212,7 +212,7 @@ if __name__ == "__main__":
         )
         generate_kwargs = {
             "steps": 1024,
-            "gen_length": 128,
+            "gen_length": 512,
             "block_length": 128,
             "temperature": generation_args.temperature,
             "cfg_scale": 0,

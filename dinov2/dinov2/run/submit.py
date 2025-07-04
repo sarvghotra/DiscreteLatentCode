@@ -96,7 +96,8 @@ def submit_jobs(task_class, args, name: str):
     executor = submitit.AutoExecutor(folder=args.output_dir, slurm_max_num_timeout=30)
 
     kwargs = {}
-    kwargs["slurm_constraint"] = "80gb"
+    kwargs["slurm_constraint"] = "hopper"
+    # kwargs["slurm_constraint"] = "80gb"
     if args.comment:
         kwargs["slurm_comment"] = args.comment
     if args.exclude:

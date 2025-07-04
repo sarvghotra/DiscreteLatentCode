@@ -98,17 +98,10 @@ image = dit.generate(dlc)
 | ----------| -------- |
 | $512\times 256$ | [lavoies/DLC_LLADA_L512](https://huggingface.co/lavoies/DLC_LLADA_L512) |
 
-Text-to-image generation can be achieved as follows:
+Text-to-image generation can be achieved by running the followint script. The script
+will download the LLADA and the DiT models:
 ```
-from transformers import AutoModel, AutoTokenizer
-
-text = ["An image of a golden retriever."]
-
-tokenizer = AutoTokenizer.from_pretrained('lavoies/DLC_LLADA_L512')
-llada = AutoModel.from_pretrained('lavoies/DLC_LLADA_L512')
-dit = AutoModel.from_pretrained('lavoies/DLC_DiT_L512')
-
-
+python text_to_image.py --input_text An image of a golden retriever --output_image retriever.png --n_generations 4
 ```
 
 
