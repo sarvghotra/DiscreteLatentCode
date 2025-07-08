@@ -311,8 +311,8 @@ def main(script_args, training_args, model_args):
             loss = torch.nn.functional.cross_entropy(
                 logits.view(-1, logits.shape[-1]), labels.view(-1), reduction="none"
             )
-            loss = loss  # / p_mask.view(-1)
-            return loss.sum() / num_items_in_batch
+            loss = loss  / (p_mask.view(-1) * num_items_in_batch)
+            return loss.sum()
     else:
         raise NotImplementedError("Not implemented")
     # torch._dynamo.config.optimize_ddp = False

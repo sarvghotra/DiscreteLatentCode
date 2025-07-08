@@ -20,6 +20,7 @@ The python packages to train all of the models can be installed using the follow
 virtualenv env
 source env/bin/activate
 pip install -r requirement.txt
+pip install flash_attn
 pip install --no-build-isolation --no-deps git+https://github.com/facebookresearch/xformers.git
 pip install -e dinov2
 ```
@@ -32,6 +33,15 @@ This dataset is used to train the DLC-SEDD and the DLC-DiT models.
 | DLC shape        | HF dataset |
 | --------------   | ------- |
 | $512\times 256$  | [lavoies/DLC_512x256](https://huggingface.co/datasets/lavoies/DLC_512x256)  |
+
+Using this dataset:
+```
+from datasets import load_dataset
+
+dataset = load_dataset("lavoies/DLC_512x256", split="train")
+features = dataset[0]['features']
+dlc = dataset[0]['labels']
+```
 
 # 📀 Pre-trained models
 
@@ -53,12 +63,13 @@ from transformers import AutoImageProcessor, AutoModel
 url = 'http://images.cocodataset.org/val2017/000000039769.jpg'
 image = Image.open(requests.get(url, stream=True).raw)
 
-processor = AutoImageProcessor.from_pretrained('lavoies/SEM_dinov2_L512')
-model = AutoModel.from_pretrained('lavoies/SEM_dinov2_L512')
+processor = AutoImageProcessor.from_pretrained('lavoies/SEM_dinov2_L512', trust_remote_code=True)
+model = AutoModel.from_pretrained('lavoies/SEM_dinov2_L512', trust_remote_code=True)
 
 inputs = processor(images=image, return_tensors="pt")
 outputs = model(**inputs)
-sems = outputs.last_hidden_state
+sem = outputs.sem
+dlc = outputs.dlc
 ```
 
 ## Pre-trained DLC-SEDD
@@ -70,7 +81,7 @@ Sampling DLC can be achieved as follows:
 ```
 from transformers import AutoModel
 
-model = AutoModel.from_pretrained('lavoies/DLC_SEDD_L512')
+model = AutoModel.from_pretrained('lavoies/DLC_SEDD_L512', trust_remote_code=True)
 
 outputs = model.generate()
 dlc = outputs.last_hidden_state
@@ -84,9 +95,10 @@ dlc = outputs.last_hidden_state
 Unconditional sampling of ImageNet images can be achieved as follows:
 ```
 from transformers import AutoModel
+from diffusers import DiTPipeline
 
-model = AutoModel.from_pretrained('lavoies/DLC_SEDD_L512')
-dit = AutoModel.from_pretrained('lavoies/DLC_DiT_L512')
+model = AutoModel.from_pretrained('lavoies/DLC_SEDD_L512', trust_remote_code=True)
+dit = DiTPipeline.from_pretrained('lavoies/DLC_DiT_L512', trust_remote_code=True)
 
 outputs = model.generate()
 dlc = outputs.last_hidden_state
@@ -101,7 +113,7 @@ image = dit.generate(dlc)
 Text-to-image generation can be achieved by running the followint script. The script
 will download the LLADA and the DiT models:
 ```
-python text_to_image.py --input_text An image of a golden retriever --output_image retriever.png --n_generations 4
+./text_to_image.sh
 ```
 
 

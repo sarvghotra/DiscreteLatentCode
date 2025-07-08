@@ -1374,7 +1374,7 @@ class SFTTrainer(Trainer):
         texts_sem = [
             "".join(s) + "<|start_sem|>" + t for t, s in zip(texts, sem_strings)
         ]
-        self.processing_class.truncation_side = "left"
+        self.processing_class.truncation_side = "right"
 
         tokens = self.processing_class(
             texts_sem,
