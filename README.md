@@ -6,10 +6,12 @@
 
 ![Head image -- unconditional and semantic compositional generation examples](figures/head_github.png)
 
+*Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models.*
+
 We introduce compositional discrete latent codes (DLCs), which enable both high-fidelity image generation and compositional generation in diffusion models.
-This repository contains the official code, DLC datasets, and models for the paper *Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models.*
-Below, we provide the DLC datasets and instructions to load the pre-trained models using HuggingFace 🤗.
-The code to reproduce the model is organized as follows:
+Below, we provide the code, DLC datasets, pretrained models, and instructions to do inference with pre-trained models using HuggingFace 🤗.\
+
+The code is organized in folders:
 * The code to reproduce the SEM encoder: [./dinov2](./dinov2)
 * The code to reproduce the DLC generator: [./sedd](./sedd)
 * The code to reproduce the DLC to image generator and text-and-image LLADA fine-tuning: [./dit](./dit).
@@ -27,8 +29,9 @@ pip install -e dinov2
 
 # 📁 DLC datasets
 
-We provide the ImageNet DLC as a HiggingFace dataset that is produced using the SEM-DinoV2 models.
-This dataset is used to train the DLC-SEDD and the DLC-DiT models.
+We provide ImageNet as 512x256 DLCs dataset that was used train the DLC-SEDD and the DLC-DiT models. 
+The dataset was produced by encoding ImageNet using the SEM-DinoV2 models and taking the DLC.
+
 
 | DLC shape        | HF dataset |
 | --------------   | ------- |
@@ -45,12 +48,15 @@ dlc = dataset[0]['labels']
 
 # 📀 Pre-trained models
 
-We provide pre-trained SEM encoders as HF model and the IN-1k linear probe accuracy on the DLC, which are discretized SEMs.
-They are Dinov2 encoders fine-tuned with ImageNet-1k data.
-The code to reproduce the encoders can be found in the folder [dinov2](./dinov2).
 
 ## Pre-trained SEM Encoders
-| DLC shape        | IN1k Lin prob acc on DLC |   HF model    |
+
+DLC encodings are simply discretized [SEMs](https://arxiv.org/abs/2204.00616). 
+We provide pre-trained SEM encoders converted to Huggingface models and uploaded to the hub. 
+The encoder is based on Dinov2, and fine-tuned with ImageNet-1k data.
+The corresponding DLCs achieve 85.3 linear probe accuracy on ImageNet-1k.
+
+| DLC shape        | ImageNet1k Lin prob acc on DLC |   HF model    |
 | --------------   | ----------------- | ------------- |
 | $512\times 256$  | 85.3              | [lavoies/SEM_dinov2_L512](https://huggingface.co/lavoies/SEM_dinov2_L512)  |
 
@@ -96,7 +102,7 @@ from ditpipeline_dlc_dit import DLCDiTPipeline
 pipe = DLCDiTPipeline.from_pretrained('lavoies/DLC_DiT_L512', trust_remote_code=True)
 ```
 
-## Fine-tuned text-and-image LLADA model
+## Fine-tuned text-and-DLC LLADA model
 | DLC shape | HF model |
 | ----------| -------- |
 | $512\times 256$ | [lavoies/DLC_LLADA_L512](https://huggingface.co/lavoies/DLC_LLADA_L512) |
@@ -119,8 +125,8 @@ Text-to-image generation can be achieved running the following scripts:
 ```
 PROMPT="An image of a golden retriever"
 
-python dit/chat_sem.py --model_name_or_path lavoies/DLC_LLADA_L512 --output_path test.pt --remasking random --L 512 --V 256 --temperature 0.2 --steps 512 --num_samples 3 --prompt="$PROMPT"
-python dit/sample_sem.py --model lavoies/DLC_DiT_L512 --cfg-scale 3 --image-size 256 --sem-path test.pt
+python dit/chat_sem.py --model_name_or_path lavoies/DLC_LLADA_L512 --output_path golden.pt --remasking random --L 512 --V 256 --temperature 0.2 --steps 512 --num_samples 3 --prompt="$PROMPT"
+python dit/sample_sem.py --model lavoies/DLC_DiT_L512 --cfg-scale 3 --image-size 256 --sem-path golden.pt
 ```
 
 
