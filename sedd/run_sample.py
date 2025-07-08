@@ -29,6 +29,7 @@ def main():
     parser.add_argument("--eta", type=float, default=0.01)
     parser.add_argument("--temp", type=float, default=1.0)
     parser.add_argument("--global_seed", type=int, default=0)
+    parser.add_argument("--save_name", type=str, default=None)
     args = parser.parse_args()
 
     accelerator = Accelerator()
@@ -62,12 +63,12 @@ def main():
     print(f"Running with {args=}")
 
     model, graph, noise = load_model(args.model_path, "cuda", args.checkpoint_name)
-    model.forward = torch.compile(model.forward)
+    # model.forward = torch.compile(model.forward)
 
     sampling_fn = sampling.get_pc_sampler(
         graph,
         noise,
-        (args.batch_size, model.config.model.length),
+        (args.batch_size, model.config.length),
         args.sample_name,  # "analytic",
         args.steps,
         device="cuda",
@@ -92,7 +93,10 @@ def main():
         if (len(os.listdir(sample_folder_dir)) * args.batch_size) > args.total_samples:
             exit(0)
         samples = sampling_fn(model)
-        path = os.path.join(sample_folder_dir, f"{uuid.uuid4()}.pt")
+        if args.save_name is None:
+            path = os.path.join(sample_folder_dir, f"{uuid.uuid4()}.pt")
+        else:
+            path = os.path.join(sample_folder_dir, f"{args.save_name}.pt")
         torch.save(samples.cpu(), path)
 
 

@@ -77,14 +77,11 @@ dlc = outputs.dlc
 | --------------    | ------------- |
 | $512\times 256$   | [lavoies/DLC_SEDD_L512](https://huggingface.co/lavoies/DLC_SEDD_L512)  |
 
-Sampling DLC can be achieved as follows:
+Loading DLC SEDD can be achieved as follows:
 ```
 from transformers import AutoModel
 
 model = AutoModel.from_pretrained('lavoies/DLC_SEDD_L512', trust_remote_code=True)
-
-outputs = model.generate()
-dlc = outputs.last_hidden_state
 ```
 
 ## Pre-trained DLC-DiT
@@ -92,28 +89,38 @@ dlc = outputs.last_hidden_state
 | --------------    | ------------- |
 | $512\times 256$   | [lavoies/DLC_DiT_L512](https://huggingface.co/lavoies/DLC_DiT_L512)  |
 
-Unconditional sampling of ImageNet images can be achieved as follows:
+Loading DLC DiT custom pipeline can be achieved as follows:
 ```
-from transformers import AutoModel
-from diffusers import DiTPipeline
+from ditpipeline_dlc_dit import DLCDiTPipeline
 
-model = AutoModel.from_pretrained('lavoies/DLC_SEDD_L512', trust_remote_code=True)
-dit = DiTPipeline.from_pretrained('lavoies/DLC_DiT_L512', trust_remote_code=True)
-
-outputs = model.generate()
-dlc = outputs.last_hidden_state
-image = dit.generate(dlc)
+pipe = DLCDiTPipeline.from_pretrained('lavoies/DLC_DiT_L512', trust_remote_code=True)
 ```
 
 ## Fine-tuned text-and-image LLADA model
 | DLC shape | HF model |
 | ----------| -------- |
 | $512\times 256$ | [lavoies/DLC_LLADA_L512](https://huggingface.co/lavoies/DLC_LLADA_L512) |
-
-Text-to-image generation can be achieved by running the followint script. The script
-will download the LLADA and the DiT models:
+Loading LLADA can be achieved as follows
 ```
-./text_to_image.sh
+from transformers import AutoModel
+
+model = AutoModel.from_pretrained('lavoies/DLC_LLADA_L512', trust_remote_code=True)
+```
+
+## Unconditional generation
+Unconditional generation can be achieved running the following scripts:
+```
+python sedd/run_sample.py --sample_dir . --model_path lavoies/DLC_SEDD_L512  --batch_size 32 --steps 512 --total_samples 32 --save_name uncond
+python dit/sample_sem.py --model lavoies/DLC_DiT_L512 --cfg-scale 1.5 --image-size 256 --sem-path diffused_SEMs/uncond.pt
+```
+
+## Text-to-image generation
+Text-to-image generation can be achieved running the following scripts:
+```
+PROMPT="An image of a golden retriever"
+
+python dit/chat_sem.py --model_name_or_path lavoies/DLC_LLADA_L512 --output_path test.pt --remasking random --L 512 --V 256 --temperature 0.2 --steps 512 --num_samples 3 --prompt="$PROMPT"
+python dit/sample_sem.py --model lavoies/DLC_DiT_L512 --cfg-scale 3 --image-size 256 --sem-path test.pt
 ```
 
 
@@ -122,7 +129,7 @@ will download the LLADA and the DiT models:
 # 📚 References
 
 Our implementation builds upon three prior works:
-* The SEM encoder is built of the work of [DinoV2](https://github.com/facebookresearch/dinov2).
-* The DLC generative model implementation is built upond [SEDD](https://github.com/louaaron/Score-Entropy-Discrete-Diffusion)
+* The SEM encoder is built upon [DinoV2](https://github.com/facebookresearch/dinov2).
+* The DLC generative model implementation is built upon [SEDD](https://github.com/louaaron/Score-Entropy-Discrete-Diffusion)
 * The DLC-to-image generation is built upon [Fast-DiT](https://github.com/chuanyangjin/fast-DiT), which itself is built upon [DiT](https://github.com/facebookresearch/DiT).
 

@@ -6,12 +6,13 @@ from omegaconf import OmegaConf
 import graph_lib
 import noise_lib
 import utils
-from model import SEDD
+# from model import SEDD
+from transformers import AutoModel
 from model.ema import ExponentialMovingAverage
 
 
 def load_model_hf(dir, device):
-    score_model = SEDD.from_pretrained(dir).to(device)
+    score_model = AutoModel.from_pretrained(dir, trust_remote_code=True).to(device)
     graph = graph_lib.get_graph(score_model.config, device)
     noise = noise_lib.get_noise(score_model.config).to(device)
     return score_model, graph, noise
