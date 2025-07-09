@@ -100,6 +100,7 @@ pipe = DLCDiTPipeline.from_pretrained('lavoies/DLC_DiT_L512', trust_remote_code=
 | DLC shape | HF model |
 | ----------| -------- |
 | $512\times 256$ | [lavoies/DLC_LLADA_L512](https://huggingface.co/lavoies/DLC_LLADA_L512) |
+
 Loading LLADA can be achieved as follows
 ```
 from transformers import AutoModel
@@ -122,6 +123,14 @@ PROMPT="An image of a golden retriever"
 python dit/chat_sem.py --model_name_or_path lavoies/DLC_LLADA_L512 --output_path test.pt --remasking random --L 512 --V 256 --temperature 0.2 --steps 512 --num_samples 3 --prompt="$PROMPT"
 python dit/sample_sem.py --model lavoies/DLC_DiT_L512 --cfg-scale 3 --image-size 256 --sem-path test.pt
 ```
+
+## Semantic compositional generation
+Semantic compositional generation can be achieved running the following script:
+```
+python dit/sample_comp_imgs.py --temp 0.001 --cfg-scale 3.5 --class-id n07734744_10099,n01910747_10038 --seed 0
+```
+The `class-id` arugments are images of ImageNet. The above command generates images that are composition of the features of a mushroom and of a jellyfish.
+An arbitrary number of images can be composed as long as they are separated with a comma (`,`). 
 
 
 # 🖌 Citation
