@@ -35,8 +35,6 @@ python dinov2/run/train/train.py \
 
 The training code saves the weights of the teacher in the `eval` folder every 6250 iterations for evaluation.
 
-Training time is approximately 1.2 days.
-
 ## Evaluation
 
 The training code regularly saves the teacher weights. In order to evaluate the model, run the following evaluation on a single node:
