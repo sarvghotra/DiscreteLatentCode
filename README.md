@@ -140,6 +140,15 @@ An arbitrary number of images can be composed as long as they are separated with
 
 
 # 🖌 Citation
+@misc{lavoie2025compositionaldiscretelatentcode,
+      title={Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models}, 
+      author={Samuel Lavoie and Michael Noukhovitch and Aaron Courville},
+      year={2025},
+      eprint={2507.12318},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2507.12318}, 
+}
 
 # 📚 References
 
