@@ -22,5 +22,5 @@ evaluation suite](https://github.com/openai/guided-diffusion/tree/main/evaluatio
 other metrics. For example, to sample 50K images from our pre-trained DiTSEM-XL/2 model over `N` GPUs, run:
 
 ```bash
-sbatch --array=0-195 sample_parallelized_imgs.sh --ckpt /path/to/dit/custom_checkpoint_0.pkl --dino-cfg /path/to/dino/cfg.yaml --dlc-dit /path/to/dlc
+sbatch --array=0-195 sample_parallelized_imgs.sh --ckpt /path/to/dit/custom_checkpoint_0.pkl --dino-cfg /path/to/dino/cfg.yaml --dlc-dir /path/to/dlc
 ```
