@@ -21,13 +21,12 @@ def main():
     parser = argparse.ArgumentParser(description="Generate some samples")
     parser.add_argument("--model_path", default=None, type=str)
     parser.add_argument("--checkpoint_name", default=None, type=str)
-    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--total_samples", type=int, default=50_000)
     parser.add_argument("--sample_dir", type=str, default=None)
     parser.add_argument("--sample_name", type=str, default="analytic")
     parser.add_argument("--steps", type=int, default=1024)
     parser.add_argument("--eta", type=float, default=0.01)
-    parser.add_argument("--temp", type=float, default=1.0)
     parser.add_argument("--global_seed", type=int, default=0)
     parser.add_argument("--save_name", type=str, default=None)
     args = parser.parse_args()
@@ -68,12 +67,11 @@ def main():
     sampling_fn = sampling.get_pc_sampler(
         graph,
         noise,
-        (args.batch_size, model.config.length),
+        (args.batch_size, model.pos_embed.shape[0]),
         args.sample_name,  # "analytic",
         args.steps,
         device="cuda",
         eta=args.eta,
-        temp=args.temp,
     )
 
     if rank == 0:

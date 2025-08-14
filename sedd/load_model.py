@@ -6,7 +6,7 @@ from omegaconf import OmegaConf
 import graph_lib
 import noise_lib
 import utils
-# from model import SEDD
+from model import SEDD
 from transformers import AutoModel
 from model.ema import ExponentialMovingAverage
 

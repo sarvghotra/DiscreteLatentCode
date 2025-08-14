@@ -27,6 +27,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from transformers import CONFIG_MAPPING, AutoModelForCausalLM
+from pipeline_dlc_dit import DLCDiTPipeline
 
 from diffusion import create_diffusion
 from download import find_model
@@ -61,13 +62,8 @@ class CustomDataset(Dataset):
         n_sems_per_file = len(
             torch.load(os.path.join(dlc_dir, sem_files[0]), map_location="cpu")
         )
-        start_idx = n_imgs // n_sems_per_file
-        self.sem_files = sem_files[start_idx:]
-        self.start_idx = start_idx
+        self.sem_files = sem_files
         self.n_sems_per_file = n_sems_per_file
-        end_idx = math.ceil(num_fid_samples / n_sems_per_file)
-
-        self.sem_files = sem_files[start_idx:end_idx]
 
     def __len__(self):
         return len(self.sem_files)
@@ -98,61 +94,22 @@ def main(args):
     rank = accelerator.process_index
     world_size = accelerator.num_processes
     device = rank % torch.cuda.device_count()
-    seed = args.global_seed * world_size + rank
+    seed = args.global_seed + args.task_id
     torch.manual_seed(seed)
     torch.cuda.set_device(device)
     print(f"Starting rank={rank}, seed={seed}, world_size={world_size}")
 
-    if args.ckpt is None:
-        assert (
-            args.model == "DiT-XL/2"
-        ), "Only DiT-XL/2 models are available for auto-download."
-        assert args.image_size in [256, 512]
-        assert args.num_classes == 1000
-
-    # Load model:
-    latent_size = args.image_size // 8
-    with open(args.dino_cfg, "r") as f:
-        cfg = yaml.safe_load(f)
-        L = cfg["student"]["L"]
-        V = cfg["student"]["V"]
-    if "SEM" in args.model:
-        model = DiT_models[args.model](
-            input_size=latent_size, num_classes=args.num_classes, L=L, V=V
-        )
-    elif "CONT" in args.model:
-        model = DiT_models[args.model](
-            input_size=latent_size, num_classes=args.num_classes, in_dim=1024
-        )
-    else:
-        model = DiT_models[args.model](
-            input_size=latent_size, num_classes=args.num_classes
-        )
-    model = model.to(device)
-    print("Evaluation args", args)
-    # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
-    ckpt_path = args.ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
-    state_dict = find_model(ckpt_path)
-    new_state_dict = dict(state_dict)
-    for k, v in state_dict.items():
-        if "_orig_mod." in k:
-            new_state_dict[k.replace("_orig_mod.", "")] = v
-            del new_state_dict[k]
-    model.load_state_dict(new_state_dict)
-    print("Model", model)
-    model = torch.compile(model)
-
-    model.eval()  # important!
-    diffusion = create_diffusion(str(args.num_sampling_steps))
-    vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
+    pipe = DLCDiTPipeline.from_pretrained(args.hf_model, trust_remote_code=True)
+    pipe = pipe.to(device)
     assert args.cfg_scale >= 1.0, "In almost all cases, cfg_scale be >= 1.0"
     using_cfg = args.cfg_scale > 1.0
 
     # Create folder to save samples:
-    model_string_name = args.model.replace("/", "-")
-    ckpt_string_name = (
-        os.path.basename(args.ckpt).replace(".pt", "") if args.ckpt else "pretrained"
-    )
+    model_string_name = args.hf_model.replace("/", "-")
+    ckpt_string_name = "huggingface" 
+    # (
+    #     os.path.basename(args.ckpt).replace(".pt", "") if args.ckpt else "huggingface"
+    # )
     folder_name = (
         f"{model_string_name}-{ckpt_string_name}-size-{args.image_size}-vae-{args.vae}-"
         f"cfg-{args.cfg_scale}-seed-{args.global_seed}"
@@ -164,73 +121,28 @@ def main(args):
     # dist.barrier()
     accelerator.wait_for_everyone()
 
-    n_imgs = len(os.listdir(sample_folder_dir))
-    dataset = CustomDataset(args.dlc_dir, n_imgs, args.num_fid_samples)
+    dataset = CustomDataset(args.dlc_dir, 0, args.num_fid_samples)
+    print(f"task index: {args.task_id}, sem_file: {dataset.sem_files[args.task_id]}")
+    ys = dataset[args.task_id]
 
     n = args.per_proc_batch_size
     global_batch_size = n * world_size
 
-    loader = DataLoader(
-        dataset,
-        batch_size=n,
-        shuffle=False,
-        num_workers=4,
-        pin_memory=True,
-        drop_last=False,
-    )
-    loader = accelerator.prepare(loader)
-
-    total = dataset.start_idx * dataset.n_sems_per_file
-    for ys in tqdm(loader):
-        # FIXME: There seems to be a bug in the dataloader when the size of the dataset is 0
-        if ys is None:
-            break
-        # Sample inputs:
-        ys = ys.view(-1, ys.shape[-1])
+    # Sample inputs:
+    total = 0
+    ys = ys.view(-1, ys.shape[-1])
+    if True:
         for y in tqdm(torch.chunk(ys, 4)):
             y = y.view(-1, y.shape[-1])
             y = y.to(device)
             n = len(y)
-            z = torch.randn(
-                n, model.in_channels, latent_size, latent_size, device=device
-            )
-            # Setup classifier-free guidance:
-            if using_cfg:
-                z = torch.cat([z, z], 0)
-                y_null = torch.tensor([[V] * model.sem_embedder.L] * n, device=device)
-                y = torch.cat([y, y_null], 0)
-                model_kwargs = dict(y=y, cfg_scale=args.cfg_scale, t_max=args.t_max)
-                sample_fn = model.forward_with_cfg
-            else:
-                model_kwargs = dict(y=y)
-                sample_fn = model.forward
-
-            # Sample images:
-            samples = diffusion.p_sample_loop(
-                sample_fn,
-                z.shape,
-                z,
-                clip_denoised=False,
-                model_kwargs=model_kwargs,
-                progress=False,
-                device=device,
-            )
-            if using_cfg:
-                samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
-
-            samples = vae.decode(samples / 0.18215).sample
-            samples = (
-                torch.clamp(127.5 * samples + 128.0, 0, 255)
-                .permute(0, 2, 3, 1)
-                .to("cpu", dtype=torch.uint8)
-                .numpy()
-            )
+            samples = pipe(dlcs=y, num_inference_steps=256, guidance_scale=1.0).images
 
             # Save samples to disk as individual .png files
             for i, sample in enumerate(samples):
-                index = i * world_size + rank + total
-                Image.fromarray(sample).save(f"{sample_folder_dir}/{index:06d}.png")
-            total += n * world_size
+                index = i + args.task_id * len(ys) + total
+                sample.save(f"{sample_folder_dir}/{index:06d}.png")
+            total += n
             accelerator.wait_for_everyone()
 
     # Make sure all processes have finished saving their samples before attempting to convert to .npz
@@ -244,12 +156,11 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model", type=str, choices=list(DiT_models.keys()), default="DiTSEM-XL/2"
+        "--hf-model", type=str
     )
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")
     parser.add_argument("--sample-dir", type=str, default="samples")
     parser.add_argument("--per-proc-batch-size", type=int, default=32)
-    parser.add_argument("--dino-cfg", type=str, required=True)
     parser.add_argument("--num-fid-samples", type=int, default=50_000)
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
     parser.add_argument("--num-classes", type=int, default=1000)
@@ -257,6 +168,8 @@ if __name__ == "__main__":
     parser.add_argument("--t-max", type=float, default=None)
     parser.add_argument("--num-sampling-steps", type=int, default=250)
     parser.add_argument("--global-seed", type=int, default=0)
+    parser.add_argument("--task-id", type=int, default=0)
+    parser.add_argument("--total-num", type=int, default=196)
     parser.add_argument(
         "--tf32",
         action=argparse.BooleanOptionalAction,
@@ -264,13 +177,7 @@ if __name__ == "__main__":
         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.",
     )
     parser.add_argument(
-        "--ckpt",
-        type=str,
-        default=None,
-        help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).",
-    )
-    parser.add_argument(
-        "--sem-dir",
+        "--dlc-dir",
         type=str,
         default=None,
         help="Path where to find the SEMs to generate",

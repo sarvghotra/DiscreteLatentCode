@@ -74,7 +74,7 @@ class NonePredictor(Predictor):
 
 @register_predictor(name="analytic")
 class AnalyticPredictor(Predictor):
-    def update_fn(self, score_fn, x, t, step_size, temp=1):
+    def update_fn(self, score_fn, x, t, step_size):
         curr_sigma = self.noise(t)[0]
         next_sigma = self.noise(t - step_size)[0]
         dsigma = curr_sigma - next_sigma
@@ -83,7 +83,7 @@ class AnalyticPredictor(Predictor):
 
         stag_score = self.graph.staggered_score(score, dsigma)
         probs = stag_score * self.graph.transp_transition(x, dsigma)
-        return sample_categorical(probs / temp)
+        return sample_categorical(probs)
 
 
 @register_predictor(name="corrector")
@@ -155,7 +155,6 @@ def get_pc_sampler(
     denoise=True,
     eps=1e-5,
     eta=0.02,
-    temp=1.0,
     device=torch.device("cpu"),
     proj_fun=lambda x: x,
 ):
@@ -176,7 +175,7 @@ def get_pc_sampler(
             if type(predictor) is AnalyticPredictorCorrector:
                 x = predictor.update_fn(sampling_score_fn, x, t, dt, eta=eta)
             elif type(predictor) is AnalyticPredictor:
-                x = predictor.update_fn(sampling_score_fn, x, t, dt, temp=temp)
+                x = predictor.update_fn(sampling_score_fn, x, t, dt)
             else:
                 x = predictor.update_fn(sampling_score_fn, x, t, dt)
 
