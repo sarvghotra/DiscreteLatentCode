@@ -169,52 +169,51 @@ def main(args):
     # Sample inputs:
     total = 0
     ys = ys.view(-1, ys.shape[-1])
-    if True:
-        for y in tqdm(torch.chunk(ys, 4)):
-            y = y.view(-1, y.shape[-1])
-            y = y.to(device)
-            n = len(y)
-            z = torch.randn(
-                n, model.in_channels, latent_size, latent_size, device=device
-            )
-            # Setup classifier-free guidance:
-            if using_cfg:
-                z = torch.cat([z, z], 0)
-                y_null = torch.tensor([[V] * model.sem_embedder.L] * n, device=device)
-                y = torch.cat([y, y_null], 0)
-                model_kwargs = dict(y=y, cfg_scale=args.cfg_scale, t_max=args.t_max)
-                sample_fn = model.forward_with_cfg
-            else:
-                model_kwargs = dict(y=y)
-                sample_fn = model.forward
+    for y in tqdm(torch.chunk(ys, 4)):
+        y = y.view(-1, y.shape[-1])
+        y = y.to(device)
+        n = len(y)
+        z = torch.randn(
+            n, model.in_channels, latent_size, latent_size, device=device
+        )
+        # Setup classifier-free guidance:
+        if using_cfg:
+            z = torch.cat([z, z], 0)
+            y_null = torch.tensor([[V] * model.sem_embedder.L] * n, device=device)
+            y = torch.cat([y, y_null], 0)
+            model_kwargs = dict(y=y, cfg_scale=args.cfg_scale, t_max=args.t_max)
+            sample_fn = model.forward_with_cfg
+        else:
+            model_kwargs = dict(y=y)
+            sample_fn = model.forward
 
-            # Sample images:
-            samples = diffusion.p_sample_loop(
-                sample_fn,
-                z.shape,
-                z,
-                clip_denoised=False,
-                model_kwargs=model_kwargs,
-                progress=False,
-                device=device,
-            )
-            if using_cfg:
-                samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
+        # Sample images:
+        samples = diffusion.p_sample_loop(
+            sample_fn,
+            z.shape,
+            z,
+            clip_denoised=False,
+            model_kwargs=model_kwargs,
+            progress=False,
+            device=device,
+        )
+        if using_cfg:
+            samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
 
-            samples = vae.decode(samples / 0.18215).sample
-            samples = (
-                torch.clamp(127.5 * samples + 128.0, 0, 255)
-                .permute(0, 2, 3, 1)
-                .to("cpu", dtype=torch.uint8)
-                .numpy()
-            )
+        samples = vae.decode(samples / 0.18215).sample
+        samples = (
+            torch.clamp(127.5 * samples + 128.0, 0, 255)
+            .permute(0, 2, 3, 1)
+            .to("cpu", dtype=torch.uint8)
+            .numpy()
+        )
 
-            # Save samples to disk as individual .png files
-            for i, sample in enumerate(samples):
-                index = i + args.task_id * len(ys) + total
-                Image.fromarray(sample).save(f"{sample_folder_dir}/{index:06d}.png")
-            total += n
-            accelerator.wait_for_everyone()
+        # Save samples to disk as individual .png files
+        for i, sample in enumerate(samples):
+            index = i + args.task_id * len(ys) + total
+            Image.fromarray(sample).save(f"{sample_folder_dir}/{index:06d}.png")
+        total += n
+        accelerator.wait_for_everyone()
 
     # Make sure all processes have finished saving their samples before attempting to convert to .npz
     accelerator.wait_for_everyone()

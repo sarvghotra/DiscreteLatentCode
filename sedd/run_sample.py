@@ -27,6 +27,8 @@ def main():
     parser.add_argument("--sample_name", type=str, default="analytic")
     parser.add_argument("--steps", type=int, default=1024)
     parser.add_argument("--eta", type=float, default=0.01)
+    parser.add_argument("--t0", type=float, default=0.3)
+    parser.add_argument("--t1", type=float, default=0.55)
     parser.add_argument("--global_seed", type=int, default=0)
     parser.add_argument("--save_name", type=str, default=None)
     args = parser.parse_args()
@@ -72,6 +74,8 @@ def main():
         args.steps,
         device="cuda",
         eta=args.eta,
+        t0=args.t0,
+        t1=args.t1,
     )
 
     if rank == 0:

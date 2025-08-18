@@ -155,6 +155,8 @@ def get_pc_sampler(
     denoise=True,
     eps=1e-5,
     eta=0.02,
+    t0=0.3,
+    t1=0.55,
     device=torch.device("cpu"),
     proj_fun=lambda x: x,
 ):
@@ -173,7 +175,9 @@ def get_pc_sampler(
             t = timesteps[i] * torch.ones(x.shape[0], 1, device=device)
             x = projector(x)
             if type(predictor) is AnalyticPredictorCorrector:
-                x = predictor.update_fn(sampling_score_fn, x, t, dt, eta=eta)
+                x = predictor.update_fn(
+                    sampling_score_fn, x, t, dt, eta=eta, t0=t0, t1=t1
+                )
             elif type(predictor) is AnalyticPredictor:
                 x = predictor.update_fn(sampling_score_fn, x, t, dt)
             else:

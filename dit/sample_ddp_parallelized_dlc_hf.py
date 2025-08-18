@@ -131,19 +131,18 @@ def main(args):
     # Sample inputs:
     total = 0
     ys = ys.view(-1, ys.shape[-1])
-    if True:
-        for y in tqdm(torch.chunk(ys, 4)):
-            y = y.view(-1, y.shape[-1])
-            y = y.to(device)
-            n = len(y)
-            samples = pipe(dlcs=y, num_inference_steps=256, guidance_scale=1.0).images
+    for y in tqdm(torch.chunk(ys, int(len(ys) // args.per_proc_batch_size))):
+        y = y.view(-1, y.shape[-1])
+        y = y.to(device)
+        n = len(y)
+        samples = pipe(dlcs=y, num_inference_steps=256, guidance_scale=args.cfg_scale).images
 
-            # Save samples to disk as individual .png files
-            for i, sample in enumerate(samples):
-                index = i + args.task_id * len(ys) + total
-                sample.save(f"{sample_folder_dir}/{index:06d}.png")
-            total += n
-            accelerator.wait_for_everyone()
+        # Save samples to disk as individual .png files
+        for i, sample in enumerate(samples):
+            index = i + args.task_id * len(ys) + total
+            sample.save(f"{sample_folder_dir}/{index:06d}.png")
+        total += n
+        accelerator.wait_for_everyone()
 
     # Make sure all processes have finished saving their samples before attempting to convert to .npz
     accelerator.wait_for_everyone()

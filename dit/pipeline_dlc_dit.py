@@ -1,11 +1,36 @@
 from typing import Dict, List, Optional, Tuple, Union
 
 import torch
+from PIL import Image
 
 from diffusers.models import AutoencoderKL, DiTTransformer2DModel
 from diffusers.schedulers import KarrasDiffusionSchedulers
 from diffusers.utils.torch_utils import randn_tensor
 from diffusers import DiffusionPipeline, ImagePipelineOutput
+
+from diffusion import create_diffusion
+
+
+def cfg_wrapper(forward, cfg_scale, in_channels):
+    def fn(x, t, y):
+        half = x[: len(x) // 2]
+        combined = torch.cat([half, half], dim=0)
+        model_out = forward(combined, t, y)
+        # For exact reproducibility reasons, we apply classifier-free guidance on only
+        # three channels by default. The standard approach to cfg applies it to all channels.
+        # This can be done by uncommenting the following line and commenting-out the line following that.
+        eps, rest = model_out[:, : in_channels], model_out[:, in_channels :]
+        # eps, rest = model_out[:, :3], model_out[:, 3:]
+        cond_eps, uncond_eps = torch.split(eps, len(eps) // 2, dim=0)
+        half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)
+        eps = torch.cat([half_eps, half_eps], dim=0)
+        return torch.cat([eps, rest], dim=1)
+    return fn
+
+
+def id_wrapper(forward):
+    def fn(x, t, y):
+        return forward(x, t, y)
 
 class DLCDiTPipeline(DiffusionPipeline):
     model_cpu_offload_seq = "transformer->vae"
@@ -19,7 +44,7 @@ class DLCDiTPipeline(DiffusionPipeline):
         self.register_modules(transformer=transformer, vae=vae, scheduler=scheduler)
 
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def __call__(
         self,
         dlcs: List[List[int]],
@@ -71,8 +96,9 @@ class DLCDiTPipeline(DiffusionPipeline):
                 returned where the first element is a list with the generated images
         """
 
+        diffusion = create_diffusion(str(num_inference_steps))
         batch_size = len(dlcs)
-        latent_size = self.transformer.config.sample_size
+        latent_size = self.transformer.config.input_size
         latent_channels = self.transformer.config.in_channels
 
         latents = randn_tensor(
@@ -81,74 +107,50 @@ class DLCDiTPipeline(DiffusionPipeline):
             device=self._execution_device,
             dtype=self.transformer.dtype,
         )
+        # latents = torch.cat((latents, latents), dim=0)
         latent_model_input = torch.cat([latents] * 2) if guidance_scale > 1 else latents
 
+        sample_fn = cfg_wrapper(self.transformer, guidance_scale, latent_channels) if guidance_scale > 1 else self.transformer
+
         dlcs = torch.tensor(dlcs, device=self._execution_device)
-        L, V = self.transformer.config.dlc_l, self.transformer.config.dlc_v
+        L, V = self.transformer.config.L, self.transformer.config.V
         dlcs_null = torch.tensor([[V] * L] * batch_size, device=self._execution_device)
         dlcs_input = torch.cat([dlcs, dlcs_null], 0) if guidance_scale > 1 else dlcs
 
-        # set step values
-        self.scheduler.set_timesteps(num_inference_steps)
-        for t in self.progress_bar(self.scheduler.timesteps):
-            if guidance_scale > 1:
-                half = latent_model_input[: len(latent_model_input) // 2]
-                latent_model_input = torch.cat([half, half], dim=0)
-            latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
+        model_kwargs = dict(y=dlcs_input)
 
-            timesteps = t
-            if not torch.is_tensor(timesteps):
-                # TODO: this requires sync between CPU and GPU. So try to pass timesteps as tensors if you can
-                # This would be a good case for the `match` statement (Python 3.10+)
-                is_mps = latent_model_input.device.type == "mps"
-                if isinstance(timesteps, float):
-                    dtype = torch.float32 if is_mps else torch.float64
-                else:
-                    dtype = torch.int32 if is_mps else torch.int64
-                timesteps = torch.tensor([timesteps], dtype=dtype, device=latent_model_input.device)
-            elif len(timesteps.shape) == 0:
-                timesteps = timesteps[None].to(latent_model_input.device)
-            # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
-            timesteps = timesteps.expand(latent_model_input.shape[0])
-            # predict noise model_output
-            noise_pred = self.transformer(
-                latent_model_input, timestep=timesteps, class_labels=dlcs_input
-            ).sample
-
-            # perform guidance
-            if guidance_scale > 1:
-                eps, rest = noise_pred[:, :latent_channels], noise_pred[:, latent_channels:]
-                cond_eps, uncond_eps = torch.split(eps, len(eps) // 2, dim=0)
-
-                half_eps = uncond_eps + guidance_scale * (cond_eps - uncond_eps)
-                eps = torch.cat([half_eps, half_eps], dim=0)
-
-                noise_pred = torch.cat([eps, rest], dim=1)
-
-            # learned sigma
-            if self.transformer.config.out_channels // 2 == latent_channels:
-                model_output, _ = torch.split(noise_pred, latent_channels, dim=1)
-            else:
-                model_output = noise_pred
-
-            # compute previous image: x_t -> x_t-1
-            latent_model_input = self.scheduler.step(model_output, t, latent_model_input).prev_sample
+        samples = diffusion.p_sample_loop(
+            sample_fn,
+            latent_model_input.shape,
+            latent_model_input,
+            clip_denoised=False,
+            model_kwargs=model_kwargs,
+            progress=False,
+            device=self._execution_device)
 
         if guidance_scale > 1:
-            latents, _ = latent_model_input.chunk(2, dim=0)
+            latents, _ = samples.chunk(2, dim=0)
         else:
-            latents = latent_model_input
+            latents = samples
 
         latents = 1 / self.vae.config.scaling_factor * latents
         samples = self.vae.decode(latents).sample
 
-        samples = (samples / 2 + 0.5).clamp(0, 1)
+        # samples = (samples / 2 + 0.5).clamp(0, 1)
+        samples = (
+            torch.clamp(127.5 * samples + 128.0, 0, 255)
+            .permute(0, 2, 3, 1)
+            .to("cpu", dtype=torch.uint8)
+            .numpy()
+        )
+
+        samples = [Image.fromarray(image) for image in samples]
 
         # we always cast to float32 as this does not cause significant overhead and is compatible with bfloat16
-        samples = samples.cpu().permute(0, 2, 3, 1).float().numpy()
+        # samples = samples.cpu().permute(0, 2, 3, 1).float().numpy()
 
-        if output_type == "pil":
-            samples = self.numpy_to_pil(samples)
+        # if output_type == "pil":
+        #     samples = self.numpy_to_pil(samples)
 
         # Offload all models
         self.maybe_free_model_hooks()
