@@ -17,7 +17,7 @@ grad_acc_steps=8 # Gradient accumulation seems broken for streamed dataset...
 # accelerate launch --main_process_port 29501 --multi_gpu --num_processes 2 --config_file deepspeed_zero2.yaml --mixed_precision bf16 \
 accelerate launch --main_process_port 29501 --num_processes 4 --config_file deepspeed_zero2.yaml --mixed_precision bf16 \
     --gradient_accumulation_steps $grad_acc_steps \
-    train_llama_sem_laion.py \
+    ../train_llama_sem_laion.py \
     --dataset_name /network/scratch/n/noukhovm/experiments/coco-dinov2-vitl14-pos-shared-sem-dataset-temp0.1 \
     --dataset_train_split train \
     --dataset_test_split validation \
