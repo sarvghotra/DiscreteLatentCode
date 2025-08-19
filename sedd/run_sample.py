@@ -64,12 +64,13 @@ def main():
     print(f"Running with {args=}")
 
     model, graph, noise = load_model(args.model_path, "cuda", args.checkpoint_name)
-    # model.forward = torch.compile(model.forward)
+    length = model.pos_embed.shape[0]
+    model.forward = torch.compile(model.forward)
 
     sampling_fn = sampling.get_pc_sampler(
         graph,
         noise,
-        (args.batch_size, model.pos_embed.shape[0]),
+        (args.batch_size, length),
         args.sample_name,  # "analytic",
         args.steps,
         device="cuda",
