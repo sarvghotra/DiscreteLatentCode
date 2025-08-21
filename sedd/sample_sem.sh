@@ -9,5 +9,4 @@ SEED=${SLURM_ARRAY_TASK_ID:=0}
 
 echo $SEED
 
-# source mila.sh
 accelerate launch --num_processes 1 --mixed_precision bf16 run_sample.py  --batch_size 256 --total_samples 50_000 --global_seed=$SEED $@
