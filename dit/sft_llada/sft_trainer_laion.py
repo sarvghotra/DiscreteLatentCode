@@ -1429,11 +1429,12 @@ class SFTTrainer(Trainer):
         self._metrics["avg_num_tokens"].append(
             inputs["attention_mask"].sum(-1).float().mean().item()
         )
+        num_items_in_batch = inputs["labels"].ne(-100).sum()
+        num_items_in_batch = (p_mask.view(-1) * num_items_in_batch)
 
         (loss, outputs) = super().compute_loss(
             model,
             inputs,
-            p_mask,
             return_outputs=True,
             num_items_in_batch=num_items_in_batch,
         )

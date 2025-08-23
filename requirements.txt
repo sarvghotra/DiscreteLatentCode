@@ -32,3 +32,4 @@ vendi-score==0.0.3
 wandb==0.18.3
 webdataset==0.2.100
 deepspeed
+peft

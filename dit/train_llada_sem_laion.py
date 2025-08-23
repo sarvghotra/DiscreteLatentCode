@@ -24,10 +24,10 @@ from transformers import (
 from transformers.loss.loss_utils import fixed_cross_entropy
 from transformers.trainer_utils import get_last_checkpoint
 
-from sft_llama.collator import DataCollatorForCompletionOnlyLM
-from sft_llama.sem_llama import LlamaForCausalLMWithLearnedPositions
-from sft_llama.sft_config import ModelConfig, ScriptArguments, SFTConfig
-from sft_llama.sft_trainer_laion import SFTTrainer
+from sft_llada.collator import DataCollatorForCompletionOnlyLM
+from sft_llada.sem_llama import LlamaForCausalLMWithLearnedPositions
+from sft_llada.sft_config import ModelConfig, ScriptArguments, SFTConfig
+from sft_llada.sft_trainer_laion import SFTTrainer
 from vision_transformer import vit_base_sem, vit_large_sem
 
 transformers.logging.set_verbosity_debug()
@@ -301,7 +301,7 @@ def main(script_args, training_args, model_args):
         # model.model.set_activation_checkpointing("whole_layer")
         # model.forward = torch.compile(model.forward)
 
-        def compute_loss_func(outputs, labels, p_mask, num_items_in_batch=None):
+        def compute_loss_func(outputs, labels, num_items_in_batch=None):
             logits = outputs["logits"] if isinstance(outputs, dict) else outputs[0]
             labels = labels.to(logits.device)
             # loss = torch.nn.functional.cross_entropy(logits, labels, reduction='none')
@@ -311,7 +311,7 @@ def main(script_args, training_args, model_args):
             loss = torch.nn.functional.cross_entropy(
                 logits.view(-1, logits.shape[-1]), labels.view(-1), reduction="none"
             )
-            loss = loss  / (p_mask.view(-1) * num_items_in_batch)
+            loss = loss  / num_items_in_batch
             return loss.sum()
     else:
         raise NotImplementedError("Not implemented")
