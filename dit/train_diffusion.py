@@ -157,7 +157,6 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
 def parse_args_stage(meta_args, current_iteration):
     args = parse_args()
     feature_path = os.path.join(
@@ -280,7 +279,7 @@ def main(args):
             f, l = torch.tensor(x['features']), torch.tensor(x['labels'])
             return {"features": f, "labels": l}
         try:
-            dataset = load_dataset(args.hf_dataset)
+            dataset = load_dataset(args.hf_dataset)['train']
         except:
             dataset = load_from_disk(args.hf_dataset)
         # dataset = dataset.map(process_fn)
