@@ -25,7 +25,7 @@ from diffusers.models import AutoencoderKL
 from PIL import Image
 from safetensors.torch import load_file
 from torch.nn.parallel import DistributedDataParallel as DDP
-from datasets import load_from_disk
+from datasets import load_from_disk, load_dataset
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 from torchvision import transforms
@@ -279,7 +279,10 @@ def main(args):
         def process_fn(x):
             f, l = torch.tensor(x['features']), torch.tensor(x['labels'])
             return {"features": f, "labels": l}
-        dataset = load_from_disk(args.hf_dataset)
+        try:
+            dataset = load_dataset(args.hf_dataset)
+        except:
+            dataset = load_from_disk(args.hf_dataset)
         # dataset = dataset.map(process_fn)
         logger.info(f"HF dataset: {args.hf_dataset}")
     else:
